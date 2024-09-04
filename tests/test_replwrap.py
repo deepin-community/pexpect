@@ -2,6 +2,7 @@ import platform
 import unittest
 import re
 import os
+import sys
 
 import pexpect
 from pexpect import replwrap
@@ -24,7 +25,7 @@ class REPLWrapTestCase(unittest.TestCase):
 
     def test_bash(self):
         bash = replwrap.bash()
-        res = bash.run_command("alias")
+        res = bash.run_command("alias xyzzy=true; alias")
         assert 'alias' in res, res
 
         try:
@@ -38,12 +39,13 @@ class REPLWrapTestCase(unittest.TestCase):
         " PAGER is set to cat, to prevent timeout in ``man sleep``. "
         bash = replwrap.bash()
         res = bash.run_command('man sleep', timeout=5)
-        assert 'SLEEP' in res, res
+        assert 'SLEEP' in res.upper(), res
 
     def test_bash_env(self):
         """env, which displays PS1=..., should not mess up finding the prompt.
         """
         bash = replwrap.bash()
+        res = bash.run_command("export PS1")
         res = bash.run_command("env")
         self.assertIn('PS1', res)
         res = bash.run_command("echo $HOME")
@@ -90,8 +92,22 @@ class REPLWrapTestCase(unittest.TestCase):
                                     "PS1='{0}' PS2='{1}' "
                                     "PROMPT_COMMAND=''")
 
+        print(repl)
         res = repl.run_command("echo $HOME")
+        print(res)
         assert res.startswith('/'), res
+
+    def test_zsh(self):
+        zsh = replwrap.zsh()
+        res = zsh.run_command("env")
+        assert 'PAGER' in res, res
+
+        try:
+            zsh.run_command('')
+        except ValueError:
+            pass
+        else:
+            assert False, "Didn't raise ValueError for empty input"
 
     def test_python(self):
         if platform.python_implementation() == 'PyPy':
@@ -108,7 +124,7 @@ class REPLWrapTestCase(unittest.TestCase):
         if platform.python_implementation() == 'PyPy':
             raise unittest.SkipTest(skip_pypy)
 
-        child = pexpect.spawn('python', echo=False, timeout=5, encoding='utf-8')
+        child = pexpect.spawn(sys.executable, echo=False, timeout=5, encoding='utf-8')
         # prompt_change=None should mean no prompt change
         py = replwrap.REPLWrapper(child, u">>> ", prompt_change=None,
                                   continuation_prompt=u"... ")

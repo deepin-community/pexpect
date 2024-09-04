@@ -8,10 +8,11 @@ export PYBUILD_NAME = pexpect
 # test_beforeacross_chunks seems to contain a race condition as to whether
 # the captured output contains a newline or not, which it then asserts
 # test_spawn_uses_env appears to rarely fail with no exit code (also a race?)
-export PYBUILD_TEST_ARGS = -k 'not (pxssh or replwrap or test_before_across_chunks or test_spawn_uses_env)'
+# test_socket failed with permission error due to leftover instances of multiprocessing
+export PYBUILD_TEST_ARGS = -k 'not (pxssh or replwrap or test_before_across_chunks or test_spawn_uses_env or test_socket)'
 
 # this skips two further tests upstream knows to be flaky in their CI
-export TRAVIS = 1
+export CI = 1
 
 %:
 	dh $@ --with python3,sphinxdoc --buildsystem=pybuild

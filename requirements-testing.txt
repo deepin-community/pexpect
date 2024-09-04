@@ -1,5 +1,6 @@
-pytest
-pytest-cov
+aiounittest; python_version < '3.8'
 coverage
 coveralls
-pytest-capturelog
+ptyprocess
+pytest
+pytest-cov

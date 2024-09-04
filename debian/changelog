@@ -1,3 +1,23 @@
+pexpect (4.9-2) unstable; urgency=medium
+
+  * Team upload
+
+  [ Paul Mars ]
+  * Rename TRAVIS env var to CI. This var was renamed upstream.
+
+ -- Graham Inggs <ginggs@debian.org>  Thu, 15 Feb 2024 14:56:30 +0000
+
+pexpect (4.9-1) unstable; urgency=medium
+
+  * Team Upload.
+  * New upstream version 4.9. (Closes: #379301, #751043)
+  * Patch '0005' for pybuild errors in Python 3.12. (Closes: #1058450)
+  * Removed old patches not suitable for new upstream version.
+  * Updated d/tests to fit Python 3.12.
+  * Added 2024 copyright for debian/*.
+
+ -- Yogeswaran Umasankar <kd8mbd@gmail.com>  Mon, 29 Jan 2024 23:30:00 +0000
+
 pexpect (4.8.0-4) unstable; urgency=medium
 
   * Team Upload.
