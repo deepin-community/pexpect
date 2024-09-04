@@ -22,7 +22,6 @@ PEXPECT LICENSE
 import pexpect
 import unittest
 import subprocess
-import tempfile
 import sys
 import os
 from . import PexpectTestCase
@@ -53,23 +52,19 @@ def function_events_callback(values):
 
 
 class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
-    runfunc = staticmethod(pexpect.run)
+    if sys.platform != 'win32':
+        runfunc = staticmethod(pexpect.run)
     cr = b'\r'
     empty = b''
     prep_subprocess_out = staticmethod(lambda x: x)
 
     def setUp(self):
-        fd, self.rcfile = tempfile.mkstemp()
-        os.write(fd, b'PS1=GO: \n')
-        os.close(fd)
+        self.runenv = os.environ.copy()
+        self.runenv['PS1'] = 'GO:'
         super(RunFuncTestCase, self).setUp()
 
-    def tearDown(self):
-        os.unlink(self.rcfile)
-        super(RunFuncTestCase, self).tearDown()
-
     def test_run_exit(self):
-        (data, exitstatus) = self.runfunc('python exit1.py', withexitstatus=1)
+        (data, exitstatus) = self.runfunc(sys.executable + ' exit1.py', withexitstatus=1)
         assert exitstatus == 1, "Exit status of 'python exit1.py' should be 1."
 
     def test_run(self):
@@ -106,9 +101,10 @@ class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
         ]
 
         (data, exitstatus) = pexpect.run(
-            'bash --rcfile {0}'.format(self.rcfile),
+            'bash --norc',
             withexitstatus=True,
             events=events,
+            env=self.runenv,
             timeout=10)
         assert exitstatus == 0
 
@@ -118,9 +114,10 @@ class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
         ]
 
         (data, exitstatus) = pexpect.run(
-            'bash --rcfile {0}'.format(self.rcfile),
+            'bash --norc',
             withexitstatus=True,
             events=events,
+            env=self.runenv,
             timeout=10)
         assert exitstatus == 0
 
@@ -130,18 +127,20 @@ class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
         ]
 
         (data, exitstatus) = pexpect.run(
-            'bash --rcfile {0}'.format(self.rcfile),
+            'bash --norc',
             withexitstatus=True,
             events=events,
+            env=self.runenv,
             timeout=10)
         assert exitstatus == 0
 
     def test_run_event_typeerror(self):
         events = [('GO:', -1)]
         with self.assertRaises(TypeError):
-            pexpect.run('bash --rcfile {0}'.format(self.rcfile),
+            pexpect.run('bash --norc',
                         withexitstatus=True,
                         events=events,
+                        env=self.runenv,
                         timeout=10)
 
     def _method_events_callback(self, values):
@@ -162,7 +161,8 @@ class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
 
 
 class RunUnicodeFuncTestCase(RunFuncTestCase):
-    runfunc = staticmethod(pexpect.runu)
+    if sys.platform != 'win32':
+        runfunc = staticmethod(pexpect.runu)
     cr = b'\r'.decode('ascii')
     empty = b''.decode('ascii')
     prep_subprocess_out = staticmethod(lambda x: x.decode('utf-8', 'replace'))

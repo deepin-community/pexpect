@@ -26,8 +26,13 @@ import signal
 import sys
 import os
 
+try:
+    from unittest import IsolatedAsyncioTestCase
+except ImportError:
+    from aiounittest import AsyncTestCase as IsolatedAsyncioTestCase
 
-class PexpectTestCase(unittest.TestCase):
+
+class _PexpectTestCaseBase:
     def setUp(self):
         self.PYTHONBIN = sys.executable
         self.original_path = os.getcwd()
@@ -49,22 +54,25 @@ class PexpectTestCase(unittest.TestCase):
         print('\n', self.id(), end=' ')
         sys.stdout.flush()
 
-        # some build agents will ignore SIGHUP and SIGINT, which python
-        # inherits.  This causes some of the tests related to terminate()
-        # to fail.  We set them to the default handlers that they should
-        # be, and restore them back to their SIG_IGN value on tearDown.
-        #
-        # I'm not entirely convinced they need to be restored, only our
-        # test runner is affected.
-        self.restore_ignored_signals = [
-            value for value in (signal.SIGHUP, signal.SIGINT,)
-            if signal.getsignal(value) == signal.SIG_IGN]
-        if signal.SIGHUP in self.restore_ignored_signals:
-            # sighup should be set to default handler
-            signal.signal(signal.SIGHUP, signal.SIG_DFL)
-        if signal.SIGINT in self.restore_ignored_signals:
-            # SIGINT should be set to signal.default_int_handler
-            signal.signal(signal.SIGINT, signal.default_int_handler)
+        if sys.platform != 'win32':
+            # some build agents will ignore SIGHUP and SIGINT, which python
+            # inherits.  This causes some of the tests related to terminate()
+            # to fail.  We set them to the default handlers that they should
+            # be, and restore them back to their SIG_IGN value on tearDown.
+            #
+            # I'm not entirely convinced they need to be restored, only our
+            # test runner is affected.
+            self.restore_ignored_signals = [
+                value for value in (signal.SIGHUP, signal.SIGINT,)
+                if signal.getsignal(value) == signal.SIG_IGN]
+            if signal.SIGHUP in self.restore_ignored_signals:
+                # sighup should be set to default handler
+                signal.signal(signal.SIGHUP, signal.SIG_DFL)
+            if signal.SIGINT in self.restore_ignored_signals:
+                # SIGINT should be set to signal.default_int_handler
+                signal.signal(signal.SIGINT, signal.default_int_handler)
+        else:
+            self.restore_ignored_signals = []
         unittest.TestCase.setUp(self)
 
     def tearDown(self):
@@ -97,7 +105,7 @@ class PexpectTestCase(unittest.TestCase):
                 raise AssertionError("%s was not raised" % excClass)
 
         @contextlib.contextmanager
-        def assertRaisesRegexp(self, excClass, pattern):
+        def assertRaisesRegex(self, excClass, pattern):
             import re
             try:
                 yield
@@ -106,3 +114,11 @@ class PexpectTestCase(unittest.TestCase):
                 assert re.match(pattern, str(e))
             else:
                 raise AssertionError("%s was not raised" % excClass)
+
+
+class PexpectTestCase(_PexpectTestCaseBase, unittest.TestCase):
+    pass
+
+
+class AsyncPexpectTestCase(_PexpectTestCaseBase, IsolatedAsyncioTestCase):
+    pass
